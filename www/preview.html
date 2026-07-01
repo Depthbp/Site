@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파일 미리보기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1e1e1e;
+        }
+        .top-bar {
+            padding: 10px;
+            background-color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-bar .file-name {
+            color: #eee;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        #editor-container {
+            height: calc(100vh - 55px);
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <span class="file-name" id="file-name-display"></span>
+        <a id="download-btn" class="btn btn-primary" download>
+            <i class="bi bi-download"></i> 다운로드
+        </a>
+    </div>
+
+    <div id="editor-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const filePath = params.get('file');
+
+        if (filePath) {
+            const fileName = filePath.split('/').pop();
+            document.title = `${fileName} - 미리보기`;
+            document.getElementById('file-name-display').textContent = fileName;
+
+            const downloadBtn = document.getElementById('download-btn');
+            downloadBtn.href = filePath;
+            downloadBtn.setAttribute('download', fileName);
+
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+            require(['vs/editor/editor.main'], function() {
+                fetch(filePath)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('파일을 불러오는 데 실패했습니다.');
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        monaco.editor.create(document.getElementById('editor-container'), {
+                            value: text,
+                            language: getLanguageFromExtension(fileName),
+                            theme: 'vs-dark',
+                            readOnly: true,
+                            automaticLayout: true
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('editor-container').innerText = '파일 내용을 표시할 수 없습니다. 콘솔을 확인하세요.';
+                    });
+            });
+        } else {
+            document.getElementById('editor-container').innerText = '미리볼 파일이 지정되지 않았습니다.';
+        }
+        
+        function getLanguageFromExtension(filename) {
+            const extension = filename.split('.').pop().toLowerCase();
+            switch (extension) {
+                case 'js':
+                    return 'javascript';
+                case 'css':
+                    return 'css';
+                case 'html':
+                    return 'html';
+                case 'php':
+                    return 'php';
+                case 'json':
+                    return 'json';
+                case 'md':
+                    return 'markdown';
+                case 'xml':
+                    return 'xml';
+                case 'py':
+                    return 'python';
+                case 'java':
+                    return 'java';
+                case 'c':
+                    return 'c';
+                case 'cpp':
+                    return 'cpp';
+                case 'cs':
+                    return 'csharp';
+                case 'go':
+                    return 'go';
+                case 'rb':
+                    return 'ruby';
+                case 'rs':
+                    return 'rust';
+                case 'sql':
+                    return 'sql';
+                case 'swift':
+                    return 'swift';
+                case 'ts':
+                    return 'typescript';
+                case 'sh':
+                    return 'shell';
+                case 'bat':
+                    return 'bat';
+                default:
+                    return 'plaintext';
+            }
+        }
+    </script>
+</body>
+</html>

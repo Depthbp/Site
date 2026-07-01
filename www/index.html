@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    <style>
+        .portfolio-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .portfolio-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+        }
+    </style>
+    <link rel="icon" href="assets/icon.svg">
+    <title>Depth</title>
+</head>
+
+<body>
+    <!-- 내비게이션 바가 삽입될 위치 -->
+    <div id="navbar-placeholder"></div>
+
+    <!-- 소개 섹션 -->
+    <section id="intro" class="pb-5"
+        style="background-image: url('assets/3d_bg.png'); background-size: cover; background-position: center; background-attachment: fixed; padding-top: 8rem;">
+        <div class="container">
+            <h2 class="mb-4">동아리 소개</h2>
+            <blockquote class="blockquote">
+                <p class="lead mb-0 display-6 fst-italic">
+                    <span class="fw-bold" style="font-size:2.5rem;">&ldquo;</span>
+                    깊이 있는 코드, 깊이 있는 코딩!
+                    <span class="fw-bold" style="font-size:2.5rem;">&rdquo;</span>
+                </p>
+            </blockquote>
+            <p class="lead">2025보평초 6학년 친구들로 구성된 코딩놀이터<br>- 친구들과 코딩을 하면서 코딩 실력을 향상하고, 버그를 찾아 디버깅을 하는 과정을 경험하면서 문제 해결력과
+                사고력을 기른다.</p>
+        </div>
+    </section>
+
+    <!-- 포트폴리오 섹션 -->
+    <section id="portfolio" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="mb-4">포트폴리오</h2>
+            <p class="text-muted mb-4">7명</p>
+            <div class="row g-4 justify-content-center">
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/35ae2i/6_0b1Ud018svcs3xmmxjdr8bt_hkxte2.jpg?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="우찬희">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">우찬희</h5>
+                            <span class="badge bg-primary fs-6">회장</span>
+                            <a href="portfolio/우찬희" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/383d26/7_857Ud018svc1r1p57zhbc096_h05k3n.jpg?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="박승헌">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">박승헌</h5>
+                            <span class="badge bg-secondary fs-6">부회장</span>
+                            <a href="portfolio/박승헌" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/382ia2/5_a64Ud018svc1jak55zu6ftx6_b6jqb8.png?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="김하준">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">김하준</h5>
+                            <span class="badge bg-secondary fs-6">부회장</span>
+                            <a href="portfolio/김하준" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/346a99/c_cf1Ud018svc13t9xn2rb7w64_wsat9d.jpg?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="성윤우">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">성윤우</h5>
+                            <span class="badge bg-success fs-6">멤버</span>
+                            <a href="portfolio/성윤우" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/345ghh/f_1f0Ud018svcgmlvfc22bjtl_oa1fly.jpg?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="조재희">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">조재희</h5>
+                            <span class="badge bg-success fs-6">멤버</span>
+                            <a href="portfolio/조재희" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/382fia/d_dc0Ud018svc5d7oncmnt1l3_unpmpo.jpg?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="주현우">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">주현우</h5>
+                            <span class="badge bg-success fs-6">멤버</span>
+                            <a href="portfolio/주현우" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 shadow-sm portfolio-card">
+                        <img src="https://coresos-phinf.pstatic.net/a/3839h5/f_g17Ud018svcsucae2z23d3s_bpp5ki.jpg?type=s480_gif"
+                            class="card-img-top" style="height: 180px; object-fit: cover;" alt="최서우">
+                        <div class="card-body text-center">
+                            <h5 class="card-title mb-2 fs-3">최서우</h5>
+                            <span class="badge bg-success fs-6">멤버</span>
+                            <a href="portfolio/최서우" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 푸터가 삽입될 위치 -->
+    <div id="footer-placeholder"></div>
+</body>
+
+</html>

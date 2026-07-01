@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AquaChat</title>
+
+<style>
+body {
+  margin:0;
+  font-family: Arial;
+  background: linear-gradient(180deg,#0b1a2a,#050d18);
+  color:white;
+}
+
+/* 상단 바 */
+#top {
+  padding:15px;
+  background:#081424;
+  font-size:20px;
+  font-weight:bold;
+}
+
+/* 채팅 영역 */
+#chat {
+  height:70vh;
+  overflow:auto;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+}
+
+/* 메시지 */
+.msg {
+  max-width:60%;
+  margin:5px;
+  padding:10px;
+  border-radius:15px;
+  word-break:break-word;
+}
+
+/* 내가 보낸 메시지 */
+.me {
+  background:#00bcd4;
+  align-self:flex-end;
+  color:black;
+}
+
+/* 남 메시지 */
+.other {
+  background:#1e2f4a;
+  align-self:flex-start;
+}
+
+/* 입력창 */
+#inputBox {
+  display:flex;
+  padding:10px;
+  background:#081424;
+}
+
+#msg {
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  outline:none;
+}
+
+button {
+  margin-left:5px;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:#00bcd4;
+  color:black;
+  cursor:pointer;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="top">🌊 AquaChat</div>
+
+<div id="chat"></div>
+
+<div id="inputBox">
+  <input id="msg" placeholder="메시지 입력">
+  <button onclick="send()">전송</button>
+  <button onclick="login()">로그인</button>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCD955-J7exMoOtVkjhgm_nG8fCm1sO-eE",
+  authDomain: "aquachat-92b63.firebaseapp.com",
+  projectId: "aquachat-92b63",
+  storageBucket: "aquachat-92b63.firebasestorage.app",
+  messagingSenderId: "399374422935",
+  appId: "1:399374422935:web:c6bda44eb5fa86a796ead2",
+  measurementId: "G-CYE7B97XN2"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
+
+const provider = new GoogleAuthProvider();
+
+window.login = function(){
+ signInWithPopup(auth, provider);
+}
+
+// 메시지 전송
+window.send = async function(){
+
+ const user = auth.currentUser;
+ if(!user) return alert("로그인 먼저!");
+
+ const text = document.getElementById("msg").value;
+ if(!text) return;
+
+ await addDoc(collection(db,"messages"),{
+  name: user.displayName,
+  uid: user.uid,
+  text: text,
+  time: serverTimestamp()
+ });
+
+ document.getElementById("msg").value="";
+}
+
+// 채팅 출력
+const q = query(collection(db,"messages"), orderBy("time"));
+
+onSnapshot(q,(snapshot)=>{
+
+ const chat = document.getElementById("chat");
+ chat.innerHTML="";
+
+ snapshot.forEach((doc)=>{
+  const m = doc.data();
+
+  const div = document.createElement("div");
+
+  // 내 메시지 / 남 메시지 구분
+  if(auth.currentUser && m.uid === auth.currentUser.uid){
+    div.className = "msg me";
+    div.innerHTML = m.text;
+  }else{
+    div.className = "msg other";
+    div.innerHTML = "<b>"+m.name+"</b><br>"+m.text;
+  }
+
+  chat.appendChild(div);
+ });
+
+ // 자동 스크롤
+ chat.scrollTop = chat.scrollHeight;
+
+});
+
+</script>
+
+</body>
+</html>

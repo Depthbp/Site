@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/main.js"></script>
+    <link rel="icon" href="/assets/icon.svg">
+    <title>404 Not Found - Depth</title>
+    <style>
+        body,
+        html {
+            height: 100%;
+        }
+        body {
+            background-image: url('/assets/3d_bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+	    backdrop-filter: blur(10px);
+
+        }
+        .container-404 {
+            color: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- 내비게이션 바가 삽입될 위치 -->
+    <div id="navbar-placeholder"></div>
+
+    <div class="container container-404">
+        <h1 class="display-1">404</h1>
+        <p class="lead">페이지를 찾을 수 없습니다.</p>
+        <p>요청하신 페이지가 존재하지 않거나, 이동되었을 수 있습니다.</p>
+        <a href="/" class="btn btn-primary">홈으로 돌아가기</a>
+    </div>
+
+    <!-- 푸터가 삽입될 위치 -->
+    <div id="footer-placeholder"></div>
+</body>
+</html>

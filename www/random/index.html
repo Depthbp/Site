@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>물리엔진 대형 맵 번호 뽑기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; background-color: #0f172a; margin: 0; overflow-x: hidden; }
+        canvas { image-rendering: auto; } /* 부드러운 렌더링을 위해 수정 */
+        .ball-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center p-4">
+
+    <div class="max-w-3xl w-full flex flex-col items-center gap-4">
+        <div class="text-center py-2">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-yellow-400">🎢 무중력 어드벤처 추첨</h1>
+        </div>
+
+        <!-- 결과 패널 -->
+        <div class="w-full bg-slate-800/90 backdrop-blur rounded-2xl p-4 min-h-[120px] flex flex-col items-center shadow-xl border border-slate-700">
+            <h2 class="text-xs font-bold text-slate-400 mb-3 tracking-widest uppercase">Draw Results</h2>
+            <div id="results" class="flex flex-wrap gap-3 justify-center items-center min-h-[50px]">
+                <span class="text-slate-500 text-xs italic">공이 결승선을 통과하면 번호가 나타납니다.</span>
+            </div>
+        </div>
+
+        <!-- 컨트롤러 -->
+        <div class="flex flex-wrap gap-3 items-center bg-slate-800/80 p-4 rounded-2xl w-full justify-center border border-slate-700">
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-bold">전체</span>
+                <input type="number" id="totalBalls" value="45" min="1" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-center text-sm outline-none focus:ring-1 focus:ring-yellow-400">
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-bold">추첨</span>
+                <input type="number" id="pickCount" value="6" min="1" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-center text-sm outline-none focus:ring-1 focus:ring-yellow-400">
+            </div>
+            <button id="startBtn" onclick="startLottery()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold px-8 py-2 rounded-lg shadow-lg transition-all active:scale-95">추첨 시작</button>
+        </div>
+
+        <!-- 게임 화면 -->
+        <div class="relative w-full max-w-[450px] aspect-[9/16] bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800">
+            <canvas id="gameCanvas" width="600" height="1066" class="w-full h-full object-contain"></canvas>
+            <div id="progressIndicator" class="absolute right-2 top-4 bottom-4 w-1 bg-slate-800 rounded-full opacity-40">
+                <div id="progressBar" class="w-full bg-yellow-400 rounded-full h-2 absolute top-0 transition-all duration-75"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { Engine, Composite, Bodies, Body, Constraint, Vector } = Matter;
+
+        const engine = Engine.create();
+        const world = engine.world;
+        engine.gravity.y = 1.3; 
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const viewW = 600;
+        const viewH = 1066;
+        const WORLD_W = 600;
+        const WORLD_H = 5000; 
+        const GOAL_Y = 4800;
+        const BALL_RADIUS = 18; // 공 크기를 넉넉하게 설정
+
+        let isDrawing = false;
+        let activeBalls = [];
+        let drawnNumbers = [];
+        let pickTarget = 6;
+        let dropIdx = 0;
+        let dropList = [];
+        let cameraY = 0;
+        let targetCameraY = 0;
+        let spinners = [];
+
+        window.onload = () => {
+            initBoard();
+            requestAnimationFrame(update);
+        };
+
+        function createSpinner(x, y, w, h, speed, color) {
+            const b = Bodies.rectangle(x, y, w, h, { frictionAir: 0, friction: 0, restitution: 0.8, label: 'spinner', customColor: color });
+            const c = Constraint.create({ pointA: {x, y}, bodyB: b, stiffness: 1, length: 0 });
+            Composite.add(world, [b, c]);
+            spinners.push({ body: b, speed: speed });
+        }
+
+        function initBoard() {
+            Composite.clear(world);
+            spinners = [];
+            const wallAttr = { isStatic: true, label: 'wall', friction: 0.05, customColor: '#1e293b' };
+
+            // 벽 생성
+            Composite.add(world, [
+                Bodies.rectangle(-20, WORLD_H/2, 40, WORLD_H+1000, wallAttr),
+                Bodies.rectangle(WORLD_W+20, WORLD_H/2, 40, WORLD_H+1000, wallAttr),
+                Bodies.rectangle(WORLD_W/2, -100, WORLD_W, 200, wallAttr)
+            ]);
+
+            // 장애물 배치 (끼임 방지 간격 조정)
+            for (let r = 0; r < 14; r++) {
+                const y = 400 + r * 85;
+                const count = (r % 2 === 0) ? 6 : 7;
+                const gap = 85;
+                const offX = (WORLD_W - (count - 1) * gap) / 2;
+                for (let c = 0; c < count; c++) {
+                    Composite.add(world, Bodies.circle(offX + c * gap, y, 10, { isStatic: true, restitution: 0.8, label: 'peg', customColor: '#475569' }));
+                }
+            }
+
+            // 가이드 및 슬라이드
+            createSpinner(300, 1800, 400, 20, 0.05, '#8b5cf6');
+            Composite.add(world, [
+                Bodies.rectangle(100, 2200, 450, 30, { ...wallAttr, angle: 0.5 }),
+                Bodies.rectangle(500, 2600, 450, 30, { ...wallAttr, angle: -0.5 }),
+                Bodies.rectangle(100, 3000, 450, 30, { ...wallAttr, angle: 0.5 })
+            ]);
+
+            // 하단 범퍼
+            for (let i = 0; i < 5; i++) {
+                const px = (i % 2 === 0) ? 200 : 400;
+                Composite.add(world, Bodies.circle(px, 3400 + i * 180, 50, { isStatic: true, restitution: 2.5, label: 'bumper', customColor: '#f59e0b' }));
+            }
+
+            // 결승선 깔때기
+            Composite.add(world, [
+                Bodies.rectangle(100, 4500, 550, 40, { isStatic: true, angle: 1.2, label: 'wall', customColor: '#1e293b' }),
+                Bodies.rectangle(500, 4500, 550, 40, { isStatic: true, angle: -1.2, label: 'wall', customColor: '#1e293b' }),
+                Bodies.rectangle(240, 4850, 40, 400, wallAttr),
+                Bodies.rectangle(360, 4850, 40, 400, wallAttr)
+            ]);
+
+            // 정체 방지용 회전 바
+            createSpinner(300, 4420, 150, 15, 0.12, '#f43f5e');
+            createSpinner(230, 4650, 100, 15, -0.08, '#f43f5e');
+            createSpinner(370, 4650, 100, 15, 0.08, '#f43f5e');
+        }
+
+        function startLottery() {
+            if (isDrawing) return;
+            const t = Math.min(100, Math.max(1, parseInt(document.getElementById('totalBalls').value) || 45));
+            const p = Math.min(t, Math.max(1, parseInt(document.getElementById('pickCount').value) || 6));
+            
+            isDrawing = true;
+            pickTarget = p;
+            drawnNumbers = [];
+            activeBalls = [];
+            cameraY = 0;
+            dropIdx = 0;
+            document.getElementById('results').innerHTML = '';
+            initBoard();
+
+            dropList = Array.from({length: t}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+
+            const interval = setInterval(() => {
+                if (dropIdx >= dropList.length) { clearInterval(interval); return; }
+                const num = dropList[dropIdx];
+                const ballColor = getBallColor(num);
+                const ball = Bodies.circle(300 + (Math.random()-0.5)*100, -50, BALL_RADIUS, {
+                    restitution: 0.6, friction: 0.001, label: 'ball',
+                    customNumber: num,
+                    customColor: ballColor.bg,
+                    customTextColor: ballColor.text
+                });
+                Body.setVelocity(ball, { x: (Math.random()-0.5)*5, y: 5 });
+                Composite.add(world, ball);
+                activeBalls.push(ball);
+                dropIdx++;
+            }, 150);
+        }
+
+        function getBallColor(n) {
+            // 밝고 선명한 로또 컬러 느낌
+            if(n<=10) return { bg: '#FFD700', text: '#000' }; // 금색/노랑
+            if(n<=20) return { bg: '#1E90FF', text: '#fff' }; // 파랑
+            if(n<=30) return { bg: '#FF4500', text: '#fff' }; // 빨강
+            if(n<=40) return { bg: '#A9A9A9', text: '#000' }; // 회색
+            return { bg: '#32CD32', text: '#000' }; // 녹색
+        }
+
+        function update() {
+            requestAnimationFrame(update);
+            Engine.update(engine, 1000/60);
+
+            spinners.forEach(s => Body.setAngularVelocity(s.body, s.speed));
+
+            if (activeBalls.length > 0) {
+                let maxPos = 0;
+                activeBalls.forEach(b => { if(b.position.y > maxPos) maxPos = b.position.y; });
+                targetCameraY = maxPos - (viewH * 0.5);
+            } else if (!isDrawing && drawnNumbers.length > 0) {
+                targetCameraY = WORLD_H - viewH;
+            }
+            cameraY += (Math.max(0, Math.min(targetCameraY, WORLD_H - viewH)) - cameraY) * 0.1;
+            document.getElementById('progressBar').style.top = (cameraY / (WORLD_H - viewH) * 100) + '%';
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, viewW, viewH);
+            ctx.save();
+            ctx.translate(0, -cameraY);
+
+            const all = Composite.allBodies(world);
+            all.forEach(b => {
+                if (b.position.y < cameraY - 150 || b.position.y > cameraY + viewH + 150) return;
+                
+                ctx.beginPath();
+                if (b.label === 'wall' || b.label === 'spinner') {
+                    ctx.moveTo(b.vertices[0].x, b.vertices[0].y);
+                    b.vertices.forEach(v => ctx.lineTo(v.x, v.y));
+                    ctx.closePath();
+                    ctx.fillStyle = b.customColor || '#1e293b';
+                    ctx.fill();
+                    if(b.label === 'spinner') { ctx.strokeStyle = '#fff'; ctx.lineWidth=2; ctx.stroke(); }
+                } else if (b.label === 'ball') {
+                    // 공 그리기 (숫자 포함)
+                    ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, Math.PI*2);
+                    ctx.fillStyle = b.customColor;
+                    ctx.fill();
+                    // 테두리
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // 숫자 텍스트
+                    ctx.fillStyle = b.customTextColor;
+                    ctx.font = `bold ${b.circleRadius * 1.2}px Pretendard, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(b.customNumber, b.position.x, b.position.y);
+                } else {
+                    // 핀 및 범퍼
+                    ctx.arc(b.position.x, b.position.y, b.circleRadius, 0, Math.PI*2);
+                    ctx.fillStyle = b.customColor || '#fff';
+                    ctx.fill();
+                    if(b.label === 'bumper') {
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 4;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            // 피니시 라인
+            ctx.setLineDash([10, 5]); ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(240, GOAL_Y); ctx.lineTo(360, GOAL_Y); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.restore();
+
+            // 당첨 처리 및 끼임 방지
+            for (let i = activeBalls.length - 1; i >= 0; i--) {
+                const b = activeBalls[i];
+                if (Vector.magnitude(b.velocity) < 0.3) {
+                    Body.applyForce(b, b.position, { x: (Math.random()-0.5)*0.04, y: -0.02 });
+                }
+                if (b.position.y > GOAL_Y) {
+                    if (drawnNumbers.length < pickTarget) {
+                        drawnNumbers.push(b.customNumber);
+                        const res = document.getElementById('results');
+                        if (drawnNumbers.length === 1) res.innerHTML = '';
+                        const div = document.createElement('div');
+                        div.className = 'w-14 h-14 rounded-full flex items-center justify-center font-black text-2xl ball-pop shadow-xl border-4 border-white/30';
+                        div.style.backgroundColor = b.customColor;
+                        div.style.color = b.customTextColor;
+                        div.innerText = b.customNumber;
+                        res.appendChild(div);
+                    }
+                    Composite.remove(world, b);
+                    activeBalls.splice(i, 1);
+                    if (drawnNumbers.length >= pickTarget) {
+                        isDrawing = false;
+                        document.getElementById('startBtn').innerText = "새로운 추첨";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
