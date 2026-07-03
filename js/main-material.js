@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
   // Fetch and inject navigation
-  fetch('/_includes/nav-material.html')
+  fetch('https://depth.kr/_includes/nav-material.html')
     .then(response => response.text())
     .then(data => {
       const navbarPlaceholder = document.querySelector("#navbar-placeholder");
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
   // Fetch and inject footer
-  fetch('/_includes/footer-material.html')
+  fetch('https://depth.kr/_includes/footer-material.html')
     .then(response => response.text())
     .then(data => {
        const footerPlaceholder = document.querySelector("#footer-placeholder");
