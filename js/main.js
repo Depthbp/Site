@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     `;
   document.head.appendChild(style);
-  fetch('/_includes/nav.html')
+  fetch('/includes/nav.html')
     .then(response => {
       if (!response.ok) throw new Error('nav include not found');
       return response.text();
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch(error => {
       console.error(error);
     });
-  fetch('/_includes/footer.html')
+  fetch('/includes/footer.html')
     .then(response => {
       if (!response.ok) throw new Error('footer include not found');
       return response.text();
