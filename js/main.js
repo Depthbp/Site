@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     `;
   document.head.appendChild(style);
-  fetch('https://depth.kr/_includes/nav.html')
+  fetch('/_includes/nav.html')
     .then(response => response.text())
     .then(data => {
       if (document.querySelector("#navbar-placeholder")) {
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
     });
-  fetch('https://depth.kr/_includes/footer.html')
+  fetch('/_includes/footer.html')
     .then(response => response.text())
     .then(data => {
       if (document.querySelector("#footer-placeholder")) {
