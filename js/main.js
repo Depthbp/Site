@@ -12,7 +12,10 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
   document.head.appendChild(style);
   fetch('/_includes/nav.html')
-    .then(response => response.text())
+    .then(response => {
+      if (!response.ok) throw new Error('nav include not found');
+      return response.text();
+    })
     .then(data => {
       if (document.querySelector("#navbar-placeholder")) {
         document.querySelector("#navbar-placeholder").innerHTML = data;
@@ -29,9 +32,15 @@ document.addEventListener("DOMContentLoaded", function () {
           window.addEventListener('scroll', handleNavbarTheme);
         }
       }
+    })
+    .catch(error => {
+      console.error(error);
     });
   fetch('/_includes/footer.html')
-    .then(response => response.text())
+    .then(response => {
+      if (!response.ok) throw new Error('footer include not found');
+      return response.text();
+    })
     .then(data => {
       if (document.querySelector("#footer-placeholder")) {
         document.querySelector("#footer-placeholder").innerHTML = data;
