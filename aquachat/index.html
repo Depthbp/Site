@@ -89,6 +89,7 @@ button {
   <input id="msg" placeholder="메시지 입력">
   <button onclick="send()">전송</button>
   <button onclick="login()">로그인</button>
+  <button onclick="setPass()" title="채팅방 암호 설정/변경">🔑</button>
 </div>
 
 <script type="module">
@@ -119,6 +120,57 @@ window.login = function(){
  signInWithPopup(auth, provider);
 }
 
+// ── 대화 암호화 (AES-GCM, 공유 암호 기반) ──────────────────────────────
+// 참여자끼리 공유하는 암호로 메시지를 암호화해 저장. Firestore DB를 읽어도
+// 암호문만 보이므로, 규칙이 열려있어도 내용 노출을 막는다(심층 방어).
+// 주의: 공유 암호 방식이라 암호를 아는 사람은 모두 읽을 수 있음(1:1 E2E 아님).
+const ENC_SALT = new TextEncoder().encode("aquachat-v1");
+let cryptoKey = null;
+let roomPass = localStorage.getItem("aquachat_pass") || "";
+
+async function deriveKey(pass){
+ const base = await crypto.subtle.importKey(
+   "raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+ return crypto.subtle.deriveKey(
+   { name:"PBKDF2", salt:ENC_SALT, iterations:100000, hash:"SHA-256" },
+   base, { name:"AES-GCM", length:256 }, false, ["encrypt","decrypt"]);
+}
+async function ensureKey(){
+ if(cryptoKey) return cryptoKey;
+ if(!roomPass){
+   roomPass = prompt("채팅방 암호를 입력하세요 (참여자끼리 공유하는 비밀번호):") || "";
+   if(roomPass) localStorage.setItem("aquachat_pass", roomPass);
+ }
+ cryptoKey = await deriveKey(roomPass);
+ return cryptoKey;
+}
+window.setPass = function(){
+ const p = prompt("채팅방 암호 설정/변경 (참여자끼리 공유):", roomPass);
+ if(p === null) return;
+ roomPass = p; cryptoKey = null;
+ localStorage.setItem("aquachat_pass", roomPass);
+ alert("암호가 설정되었습니다. 이제 메시지가 암호화되어 저장됩니다.");
+}
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function encryptText(text){
+ const key = await ensureKey();
+ const iv = crypto.getRandomValues(new Uint8Array(12));
+ const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key,
+   new TextEncoder().encode(text));
+ const out = new Uint8Array(iv.length + ct.byteLength);
+ out.set(iv); out.set(new Uint8Array(ct), iv.length);
+ return b64(out);
+}
+async function decryptText(payload){
+ const key = await ensureKey();
+ const data = unb64(payload);
+ const pt = await crypto.subtle.decrypt(
+   {name:"AES-GCM", iv:data.slice(0,12)}, key, data.slice(12));
+ return new TextDecoder().decode(pt);
+}
+
 // 메시지 전송
 window.send = async function(){
 
@@ -132,7 +184,8 @@ window.send = async function(){
  await addDoc(collection(db,"messages"),{
   name: user.displayName,
   uid: user.uid,
-  text: text,
+  text: await encryptText(text),
+  enc: true,
   time: serverTimestamp()
  });
 
@@ -147,32 +200,44 @@ onSnapshot(q,(snapshot)=>{
  const chat = document.getElementById("chat");
  chat.innerHTML="";
 
- snapshot.forEach((doc)=>{
-  const m = doc.data();
+ snapshot.forEach((docSnap)=>{
+  const m = docSnap.data();
 
   const div = document.createElement("div");
+  let body;  // 본문 노드 — 텍스트는 항상 textContent로만 넣어 XSS 차단
 
   // 내 메시지 / 남 메시지 구분
-  // 보안: 사용자 입력(name·text)은 innerHTML 대신 textContent/텍스트노드로 넣어 XSS 차단
   if(auth.currentUser && m.uid === auth.currentUser.uid){
     div.className = "msg me";
-    div.textContent = m.text ?? "";
+    body = div;
   }else{
     div.className = "msg other";
     const nameEl = document.createElement("b");
     nameEl.textContent = m.name ?? "익명";
     div.appendChild(nameEl);
     div.appendChild(document.createElement("br"));
-    div.appendChild(document.createTextNode(m.text ?? ""));
+    body = document.createElement("span");
+    div.appendChild(body);
   }
 
-  chat.appendChild(div);
+  chat.appendChild(div);   // 먼저 붙여 순서 유지
+  fillBody(body, m);       // 암호문이면 비동기 복호화
  });
 
  // 자동 스크롤
  chat.scrollTop = chat.scrollHeight;
 
 });
+
+// 본문 채우기: 암호화 메시지는 복호화, 평문은 그대로(구버전 호환). 항상 textContent.
+async function fillBody(node, m){
+ if(m.enc){
+   try { node.textContent = await decryptText(m.text); }
+   catch { node.textContent = "🔒 (복호화 실패 — 방 암호가 다릅니다. 🔑 버튼으로 설정)"; }
+ } else {
+   node.textContent = m.text ?? "";
+ }
+}
 
 </script>
 
