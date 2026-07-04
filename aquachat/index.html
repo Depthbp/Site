@@ -125,8 +125,9 @@ window.send = async function(){
  const user = auth.currentUser;
  if(!user) return alert("로그인 먼저!");
 
- const text = document.getElementById("msg").value;
+ const text = document.getElementById("msg").value.trim();
  if(!text) return;
+ if(text.length > 500) return alert("메시지가 너무 깁니다 (최대 500자).");
 
  await addDoc(collection(db,"messages"),{
   name: user.displayName,
@@ -152,12 +153,17 @@ onSnapshot(q,(snapshot)=>{
   const div = document.createElement("div");
 
   // 내 메시지 / 남 메시지 구분
+  // 보안: 사용자 입력(name·text)은 innerHTML 대신 textContent/텍스트노드로 넣어 XSS 차단
   if(auth.currentUser && m.uid === auth.currentUser.uid){
     div.className = "msg me";
-    div.innerHTML = m.text;
+    div.textContent = m.text ?? "";
   }else{
     div.className = "msg other";
-    div.innerHTML = "<b>"+m.name+"</b><br>"+m.text;
+    const nameEl = document.createElement("b");
+    nameEl.textContent = m.name ?? "익명";
+    div.appendChild(nameEl);
+    div.appendChild(document.createElement("br"));
+    div.appendChild(document.createTextNode(m.text ?? ""));
   }
 
   chat.appendChild(div);
