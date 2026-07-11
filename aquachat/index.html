@@ -139,7 +139,7 @@ onAuthStateChanged(auth, (user)=>{
   const who = document.getElementById("whoami");
   if(li) li.style.display = user ? "none" : "";
   if(lo) lo.style.display = user ? "" : "none";
-  if(who) who.textContent = user ? ("— " + (user.displayName || "익명") + " 님") : "";
+  if(who) who.innerHTML = user ? ("— " + (user.displayName || "익명") + " 님") : "";
 });
 
 // 메시지 전송
@@ -176,23 +176,11 @@ onSnapshot(q,(snapshot)=>{
   const div = document.createElement("div");
   div.className = "msg" + (mine ? " me" : " other");
 
-  // 이름(구글 표시 이름) — 항상 표시. textContent = XSS 안전
-  const nameEl = document.createElement("div");
-  nameEl.className = "msg-name";
-  nameEl.textContent = (m.name ?? "익명") + (mine ? " (나)" : "");
-  div.appendChild(nameEl);
-
-  // 본문 — 항상 textContent로만 넣어 XSS 차단
-  const body = document.createElement("div");
-  body.className = "msg-body";
-  body.textContent = m.text ?? "";
-  div.appendChild(body);
-
-  // 보낸 시간
-  const timeEl = document.createElement("div");
-  timeEl.className = "msg-time";
-  timeEl.textContent = fmtTime(m.time);
-  div.appendChild(timeEl);
+  div.innerHTML = `
+    <div class="msg-name">${(m.name ?? "익명") + (mine ? " (나)" : "")}</div>
+    <div class="msg-body">${m.text ?? ""}</div>
+    <div class="msg-time">${fmtTime(m.time)}</div>
+  `;
 
   chat.appendChild(div);
   });
